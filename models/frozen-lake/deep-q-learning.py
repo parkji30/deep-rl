@@ -5,31 +5,6 @@ from torch.optim import AdamW
 from torch.nn import MSELoss
 import torch
 from tqdm import tqdm
-# from collections import deque
-# import random
-
-
-# class ReplayBuffer:
-#     """Store experiences and sample random batches for training."""
-#     def __init__(self, capacity=10000):
-#         self.buffer = deque(maxlen=capacity)
-    
-#     def push(self, state, action, reward, next_state, done):
-#         self.buffer.append((state, action, reward, next_state, done))
-    
-#     def sample(self, batch_size):
-#         batch = random.sample(self.buffer, batch_size)
-#         states, actions, rewards, next_states, dones = zip(*batch)
-#         return (
-#             torch.tensor(states, dtype=torch.long),
-#             torch.tensor(actions, dtype=torch.long),
-#             torch.tensor(rewards, dtype=torch.float32),
-#             torch.tensor(next_states, dtype=torch.long),
-#             torch.tensor(dones, dtype=torch.bool)
-#         )
-    
-#     def __len__(self):
-#         return len(self.buffer)
 
 
 def neural_training_loop(
