@@ -25,8 +25,8 @@ ACTION_SPACE = 6
 
 ENV_ID = "ALE/SpaceInvaders-v5"
 EPISODES = 10000
-BUFFER_CAPACITY = 10000
-LEARNING_STARTS = 1000
+BUFFER_CAPACITY = 30000
+LEARNING_STARTS = 5000
 REWARD_MA_WINDOW = 50
 PLOT_EVERY = 20
 GAMMA = 0.99
@@ -34,7 +34,7 @@ EPSILON_START = 1.0
 EPSILON_END = 0.1
 EPSILON_DECAY_STEPS = 100000
 BATCH_SIZE = 32
-TARGET_UPDATE_FREQ = 2000
+TARGET_UPDATE_FREQ = 5000
 LEARNING_RATE = 1e-5
 SEED = 7
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
@@ -69,7 +69,13 @@ def train_step(replay_buffer, batch_size, optimizer, predictor_model, target_mod
     predicted_q_values = predictor_model(states).gather(1, actions.unsqueeze(1)).squeeze(1)
 
     with torch.no_grad():
-        next_q_values = target_model(next_states).max(dim=1).values
+        # Double DQN 
+        next_actions = predictor_model(next_states).argmax(dim=1)
+        next_q_values = target_model(next_states).gather(1, next_actions.unsqueeze(1)).squeeze(1)
+
+        # Vanilla DQN
+        # next_q_values = target_model(next_states).max(dim=1).values
+
 
     target_q_values = rewards + gamma * next_q_values * (1 - dones)
     loss = loss_func(predicted_q_values, target_q_values)
