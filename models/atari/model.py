@@ -21,7 +21,7 @@ class DeepQNetwork(nn.Module):
                 ('silu3', nn.GELU()),
                 ('conv2d4', nn.Conv2d(in_channels=32, out_channels=64, kernel_size=3, stride=stride)),
                 ('silu4', nn.GELU()),
-                ('conv2d5', nn.Conv2d(in_channels=64, out_channels=64, kernel_size=2, stride=stride)),
+                ('conv2d5', nn.Conv2d(in_channels=64, out_channels=64, kernel_size=2, stride=1)),
                 ('silu5', nn.GELU()),
             ])    
         )
@@ -35,9 +35,9 @@ class DeepQNetwork(nn.Module):
                 ('gelu', nn.GELU()),
                 ('linear2', nn.Linear(512, linear_dim)),
                 ('gelu2', nn.GELU()),
-                ('linear3', nn.Linear(linear_dim, 512)),
+                ('linear3', nn.Linear(linear_dim, linear_dim // 2)),
                 ('gelu3', nn.GELU()),
-                ('action_linear', nn.Linear(512, action_space)),
+                ('action_linear', nn.Linear(linear_dim // 2, action_space)),
             ])
         )
 

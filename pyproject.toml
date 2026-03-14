@@ -6,7 +6,7 @@ readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
     "autorom>=0.6.1",
-    "gymnasium[accept-rom-license,atari]>=1.2.3",
+    "gymnasium[accept-rom-license,atari,other]>=1.2.3",
     "ipykernel>=7.2.0",
     "jupytext>=1.19.1",
     "matplotlib>=3.10.8",
