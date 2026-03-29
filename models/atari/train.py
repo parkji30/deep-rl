@@ -10,7 +10,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
-from torch.optim import AdamW
+from torch.optim import Adam
 
 from data import ReplayBuffer, Transition
 from model import DeepQNetwork
@@ -24,20 +24,25 @@ IMG_WIDTH = 84
 ACTION_SPACE = 6
 
 ENV_ID = "ALE/SpaceInvaders-v5"
-EPISODES = 10000
-BUFFER_CAPACITY = 30000
-LEARNING_STARTS = 5000
-REWARD_MA_WINDOW = 50
-PLOT_EVERY = 20
+EPISODES = 100000
+BUFFER_CAPACITY = 50000
+LEARNING_STARTS = 20000
+PLOT_EVERY = 50
+REWARD_SMOOTHING_WINDOW = 20
 GAMMA = 0.99
 EPSILON_START = 1.0
-EPSILON_END = 0.1
-EPSILON_DECAY_STEPS = 100000
+EPSILON_END = 0.10
+EPSILON_DECAY_STEPS = 7500000
 BATCH_SIZE = 32
 TARGET_UPDATE_FREQ = 5000
-LEARNING_RATE = 1e-5
+LEARNING_RATE = 6.25e-5
 SEED = 7
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
+
+# Eval Variables
+EVAL_EVERY = 100
+EVAL_EPISODES = 20 
+EVAL_EPSILON = 0.01
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 OUTPUT_DIR = os.path.join(SCRIPT_DIR, "runs")
@@ -76,7 +81,6 @@ def train_step(replay_buffer, batch_size, optimizer, predictor_model, target_mod
         # Vanilla DQN
         # next_q_values = target_model(next_states).max(dim=1).values
 
-
     target_q_values = rewards + gamma * next_q_values * (1 - dones)
     loss = loss_func(predicted_q_values, target_q_values)
 
@@ -96,32 +100,91 @@ def huber_loss(pred, target, delta=1.0):
     return loss.mean()
 
 
-def moving_average(values, window):
-    averages = []
-    for idx in range(len(values)):
-        start = max(0, idx - window + 1)
-        window_values = values[start : idx + 1]
-        averages.append(sum(window_values) / len(window_values))
-    return averages
+def sample_rewards_every_n_episodes(rewards, every_n_episodes):
+    sampled_episodes = []
+    sampled_rewards = []
+
+    for idx, reward in enumerate(rewards, start=1):
+        if idx % every_n_episodes == 0:
+            sampled_episodes.append(idx)
+            sampled_rewards.append(reward)
+
+    return sampled_episodes, sampled_rewards
 
 
-def save_training_plot(rewards, avg_losses, epsilon, output_path):
+def moving_average(values, window_size):
+    if not values:
+        return np.array([])
+
+    window_size = min(window_size, len(values))
+    kernel = np.ones(window_size, dtype=np.float32) / window_size
+    return np.convolve(np.asarray(values, dtype=np.float32), kernel, mode="valid")
+
+
+def save_training_plot(rewards, avg_losses, epsilon, output_path, eval_rewards=None):
     fig, axes = plt.subplots(2, 1, figsize=(11, 7), sharex=True)
     reward_ax, loss_ax = axes
 
-    reward_ma = moving_average(rewards, REWARD_MA_WINDOW)
-    reward_ax.plot(rewards, alpha=0.35, color="tab:blue", linewidth=0.8, label="Reward")
-    reward_ax.plot(reward_ma, color="tab:orange", linewidth=2.0, label=f"{REWARD_MA_WINDOW}-ep MA")
+    sampled_episodes, sampled_rewards = sample_rewards_every_n_episodes(rewards, PLOT_EVERY)
+    reward_ax.plot(
+        sampled_episodes,
+        sampled_rewards,
+        alpha=0.8,
+        color="tab:blue",
+        linewidth=1.2,
+        label=f"Reward every {PLOT_EVERY} eps",
+    )
+    if sampled_rewards:
+        smoothed_rewards = moving_average(sampled_rewards, REWARD_SMOOTHING_WINDOW)
+        smoothed_episodes = sampled_episodes[len(sampled_episodes) - len(smoothed_rewards) :]
+        reward_ax.plot(
+            smoothed_episodes,
+            smoothed_rewards,
+            color="tab:orange",
+            linewidth=2.0,
+            label=f"Smoothed ({REWARD_SMOOTHING_WINDOW * PLOT_EVERY} eps MA)",
+        )
+    if eval_rewards:
+        eval_episodes = [episode for episode, reward in eval_rewards]
+        eval_values = [reward for episode, reward in eval_rewards]
+        reward_ax.plot(
+            eval_episodes,
+            eval_values,
+            color="tab:green",
+            linewidth=1.5,
+            marker="o",
+            markersize=3,
+            label=f"Eval reward ({EVAL_EPISODES} eps @ eps={EVAL_EPSILON:.2f})",
+        )
     reward_ax.set_ylabel("Reward")
     reward_ax.legend(loc="upper left")
-    reward_ax.set_title(
-        "Episode {episode} | reward {reward:.0f} | max {max_reward:.0f} | epsilon {epsilon:.3f}".format(
-            episode=len(rewards) - 1,
-            reward=rewards[-1],
-            max_reward=max(rewards),
-            epsilon=epsilon,
+
+    latest_eval = f"{eval_rewards[-1][1]:.0f}" if eval_rewards else "n/a"
+
+    if sampled_rewards:
+        reward_ax.set_title(
+            (
+                "Episode {episode} | reward at ep {sampled_episode}: {sampled_reward:.0f} | "
+                "max {max_reward:.0f} | eval {eval_reward} | epsilon {epsilon:.3f}"
+            ).format(
+                episode=len(rewards),
+                sampled_episode=sampled_episodes[-1],
+                sampled_reward=sampled_rewards[-1],
+                max_reward=max(rewards),
+                eval_reward=latest_eval,
+                epsilon=epsilon,
+            )
         )
-    )
+    else:
+        reward_ax.set_title(
+            "Episode {episode} | waiting for episode {plot_every} | max {max_reward:.0f} | eval {eval_reward} | epsilon {epsilon:.3f}".format(
+                episode=len(rewards),
+                plot_every=PLOT_EVERY,
+                max_reward=max(rewards),
+                eval_reward=latest_eval,
+                epsilon=epsilon,
+            )
+        )
 
     loss_ax.plot(avg_losses, alpha=0.8, color="tab:red", linewidth=0.8)
     loss_ax.set_xlabel("Episode")
@@ -131,6 +194,53 @@ def save_training_plot(rewards, avg_losses, epsilon, output_path):
     fig.tight_layout()
     fig.savefig(output_path)
     plt.close(fig)
+
+
+def evaluate_policy(env, model, eval_episodes, epsilon):
+    # boolean flag
+    was_training = model.training
+
+    # Inference mode
+    # disables batch and dropout
+    model.eval()
+
+    episode_rewards = []
+    try:
+        for _ in range(eval_episodes):
+            # Reset the environment to it's starting state.
+            state, info = env.reset()
+
+            terminated = False
+            truncated = False
+
+            eval_episode_reward = 0.0
+            
+            while not terminated and not truncated:
+
+                # we want to take a random action
+                if random.random() < epsilon:
+                    action = env.action_space.sample()
+                else: # rely on the trained_policy
+                    # Distable gradient computation
+                    # saves memory and speeds inference.
+                    with torch.no_grad():
+                        state_tensor = torch.as_tensor(state, dtype=torch.float32, device=DEVICE) / 255.0
+                        predicted_q_values = model(state_tensor.unsqueeze(0))
+
+                    # model will predict 6 q values. 
+                    # pick the one with highest == best action
+                    action = predicted_q_values.argmax(dim=1).item()
+
+                state, reward, terminated, truncated, info = env.step(action)
+                eval_episode_reward += reward
+
+            episode_rewards.append(eval_episode_reward)
+
+    # restore model training.
+    finally:
+        if was_training: model.train()
+
+    return np.mean(episode_rewards)
 
 
 def main():
@@ -144,6 +254,7 @@ def main():
         torch.cuda.manual_seed_all(SEED)
 
     env = make_env(ENV_ID)
+    eval_env = make_env(ENV_ID)
     env.reset(seed=SEED)
 
     predictor_model = DeepQNetwork(
@@ -164,10 +275,11 @@ def main():
     target_model.eval()
 
     replay_buffer = ReplayBuffer(capacity=BUFFER_CAPACITY)
-    optimizer = AdamW(params=predictor_model.parameters(), lr=LEARNING_RATE)
+    optimizer = Adam(params=predictor_model.parameters(), lr=LEARNING_RATE)
 
     step_counter = 0
     episode_rewards = []
+    eval_rewards = []
     episode_avg_losses = []
 
     try:
@@ -192,13 +304,14 @@ def main():
 
                 next_state, reward, terminated, truncated, info = env.step(action)
                 episode_reward += reward
+                clipped_reward = float(np.sign(reward))
 
                 done = terminated or truncated
                 replay_buffer.push(
                     Transition(
                         torch.from_numpy(state).to(device=DEVICE, dtype=torch.float32),
                         action,
-                        reward,
+                        clipped_reward,
                         torch.from_numpy(next_state).to(device=DEVICE, dtype=torch.float32),
                         done,
                     )
@@ -229,18 +342,30 @@ def main():
             else:
                 episode_avg_losses.append(float("nan"))
 
-            if episode % PLOT_EVERY == 0 and episode_rewards:
+            eval_reward = None
+            if (episode + 1 ) % EVAL_EVERY == 0:
+                # We get average eval reward)
+                eval_reward = evaluate_policy(
+                    env=eval_env,
+                    model=predictor_model,
+                    eval_episodes=EVAL_EPISODES,
+                    epsilon=EVAL_EPSILON
+                )
+                eval_rewards.append((episode + 1, eval_reward))
+
+            if (episode + 1) % PLOT_EVERY == 0 and episode_rewards:
                 save_training_plot(
                     rewards=episode_rewards,
                     avg_losses=episode_avg_losses,
                     epsilon=epsilon,
                     output_path=PLOT_PATH,
+                    eval_rewards=eval_rewards,
                 )
                 torch.save(predictor_model.state_dict(), CHECKPOINT_PATH)
 
                 print(
                     "episode={episode} reward={reward:.2f} epsilon={epsilon:.3f} saved={plot_path}".format(
-                        episode=episode,
+                        episode=episode + 1,
                         reward=episode_reward,
                         epsilon=epsilon,
                         plot_path=PLOT_PATH,
@@ -256,9 +381,11 @@ def main():
                 avg_losses=episode_avg_losses,
                 epsilon=final_epsilon,
                 output_path=PLOT_PATH,
+                eval_rewards=eval_rewards,
             )
         torch.save(predictor_model.state_dict(), CHECKPOINT_PATH)
         env.close()
+        eval_env.close()
 
 
 if __name__ == "__main__":

@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from collections import deque
 import random
 
+
 @dataclass(slots=True)
 class Transition:
     state: torch.tensor
@@ -22,17 +23,20 @@ class ReplayBuffer:
     def __len__(self):
         return len(self.buffer)
 
-    def push(self, new_transition:Transition):
+    def push(self, new_transition: Transition):
         self.buffer.append(new_transition)
 
-    def sample(self, batch_size, device='cuda'):
+    def sample(self, batch_size, device=None):
+        if device is None:
+            device = "cuda" if torch.cuda.is_available() else "cpu"
+
         batch = random.sample(self.buffer, batch_size)
-        
+
         states = torch.stack([t.state for t in batch]).to(device=device, dtype=torch.float32) / 255.0
         new_states = torch.stack([t.new_state for t in batch]).to(device=device, dtype=torch.float32) / 255.0
-        
+
         actions = torch.tensor([t.action for t in batch], dtype=torch.long, device=device)
         rewards = torch.tensor([t.reward for t in batch], dtype=torch.float32, device=device)
-        
+
         dones = torch.tensor([t.done for t in batch], dtype=torch.float32, device=device)
         return states, actions, rewards, new_states, dones
