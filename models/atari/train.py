@@ -12,7 +12,7 @@ import numpy as np
 import torch
 from torch.optim import Adam
 
-from data import ReplayBuffer, Transition
+from data import ReplayBuffer
 from model import DeepQNetwork
 
 
@@ -25,10 +25,10 @@ ACTION_SPACE = 6
 
 ENV_ID = "ALE/SpaceInvaders-v5"
 EPISODES = 100000
-BUFFER_CAPACITY = 50000
+BUFFER_CAPACITY = 250000
 LEARNING_STARTS = 20000
 PLOT_EVERY = 50
-REWARD_SMOOTHING_WINDOW = 20
+REWARD_SMOOTHING_WINDOW = 5
 GAMMA = 0.99
 EPSILON_START = 1.0
 EPSILON_END = 0.10
@@ -85,7 +85,9 @@ def train_step(replay_buffer, batch_size, optimizer, predictor_model, target_mod
     loss = loss_func(predicted_q_values, target_q_values)
 
     optimizer.zero_grad()
+    
     loss.backward()
+
     optimizer.step()
 
     return loss.item()
@@ -274,7 +276,12 @@ def main():
     target_model.load_state_dict(predictor_model.state_dict())
     target_model.eval()
 
-    replay_buffer = ReplayBuffer(capacity=BUFFER_CAPACITY)
+    replay_buffer = ReplayBuffer(
+        capacity=BUFFER_CAPACITY,
+        frame_height=IMG_HEIGHT,
+        frame_width=IMG_WIDTH,
+        stack_size=NUM_FRAMES,
+    )
     optimizer = Adam(params=predictor_model.parameters(), lr=LEARNING_RATE)
 
     step_counter = 0
@@ -285,6 +292,7 @@ def main():
     try:
         for episode in range(EPISODES):
             state, info = env.reset()
+            replay_buffer.start_episode(state)
             terminated = False
             truncated = False
             episode_reward = 0.0
@@ -308,16 +316,16 @@ def main():
 
                 done = terminated or truncated
                 replay_buffer.push(
-                    Transition(
-                        torch.from_numpy(state).to(device=DEVICE, dtype=torch.float32),
-                        action,
-                        clipped_reward,
-                        torch.from_numpy(next_state).to(device=DEVICE, dtype=torch.float32),
-                        done,
-                    )
+                    action=action,
+                    reward=clipped_reward,
+                    next_observation=next_state,
+                    done=done,
                 )
 
-                if step_counter >= LEARNING_STARTS:
+                state = next_state
+                step_counter += 1
+
+                if step_counter >= LEARNING_STARTS and step_counter % 4 == 0:
                     loss_value = train_step(
                         replay_buffer=replay_buffer,
                         batch_size=BATCH_SIZE,
@@ -329,9 +337,6 @@ def main():
                     )
                     if loss_value is not None:
                         episode_losses.append(loss_value)
-
-                state = next_state
-                step_counter += 1
 
                 if step_counter % TARGET_UPDATE_FREQ == 0:
                     target_model.load_state_dict(predictor_model.state_dict())
