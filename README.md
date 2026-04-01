@@ -21,4 +21,6 @@ I actually decided to write this by hand because I wanted to learn DQL RL. I got
     - reduced rate of epsilon decay (model explores a lot more before it dies off)
     - started learning session of model to initiate after 20,000 replays.
     - Before this, we could only hit a max reward of 1200. That took 1 day. Now, in a couple hours, we can hit > 1500. I'm gonna let it train for a day to see what i get. 
+    - After training for 3 days. I managed to get an reward of ~1000. Human benchmark is 1500. I'm going to stop here as I don't think attempting to solve this will improve my RL skills. Video of the Agent will be saved in videos. Onwards to the next one! 
     ![Atari training progress](models/atari/runs/script_training_progress.png)
+     
