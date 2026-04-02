@@ -12,7 +12,7 @@ I actually decided to write this by hand because I wanted to learn DQL RL. I got
 
 - Okay update, turns out my model was learning. I was just plotting the wrong metric (loss). This is useless because Q-Values are always moving targets. The ground truth is always changing. It's better to plot reward per episode (Temporal Difference in our case, i.e. one step at a time). Here's the reward plot below.
 
-- Sunday, March 29, 2026. 
+# Sunday, March 29, 2026. 
     - Okay I got it better than what is the human benchmark (reward score ~1500). Quite a few things i did here.
     - I increased replay buffer significantly. Did this by storing the replay images on CPU using uint8 and then converting them to torch tensors when i sample.
     - Compute loss (train) every 4th step (more for stabilizing).
@@ -21,6 +21,12 @@ I actually decided to write this by hand because I wanted to learn DQL RL. I got
     - reduced rate of epsilon decay (model explores a lot more before it dies off)
     - started learning session of model to initiate after 20,000 replays.
     - Before this, we could only hit a max reward of 1200. That took 1 day. Now, in a couple hours, we can hit > 1500. I'm gonna let it train for a day to see what i get. 
+
+# April 1, 2026
     - After training for 3 days. I managed to get an reward of ~1000. Human benchmark is 1500. I'm going to stop here as I don't think attempting to solve this will improve my RL skills. Video of the Agent will be saved in videos. Onwards to the next one! 
     ![Atari training progress](models/atari/runs/script_training_progress.png)
-     
+    - Trained agent eval video: [eval-episode-0.mp4](models/atari/runs/eval/eval-episode-0.mp4)
+    
+
+# Next Steps
+    - Onwards to learning about policy gradients.
