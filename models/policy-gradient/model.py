@@ -22,8 +22,6 @@ class Policy(nn.Module):
         state = torch.from_numpy(state).float().unsqueeze(0)
         action_probs = self.forward(state)
         m = Categorical(action_probs)
-        # argmax
-        # action =  m.probs.argmax()
         action = m.sample()
         # We need log prob for differentiability
         return action.item(), m.log_prob(action)

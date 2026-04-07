@@ -25,7 +25,7 @@ I actually decided to write this by hand because I wanted to learn DQL RL. I got
 # April 1, 2026
 - After training for 3 days. I managed to get an reward of ~1000. Human benchmark is 1500. I'm going to stop here as I don't think attempting to solve this will improve my RL skills. Video of the Agent will be saved in videos. Onwards to the next one!
 ![Atari training progress](models/atari/runs/script_training_progress.png)
-- Trained agent eval video: [eval-episode-0.mp4](models/atari/runs/eval/eval-episode-0.mp4)
+- Trained agent eval video: [eval-episode-0.mp4](models/space-shooter/runs/eval/eval-episode-0.mp4)
 
 # Next Steps
 - Onwards to learning about policy gradients.
@@ -55,9 +55,12 @@ I actually decided to write this by hand because I wanted to learn DQL RL. I got
 
 # April 1, 2026
 - After training for 3 days. I managed to get an reward of ~1000. Human benchmark is 1500. I'm going to stop here as I don't think attempting to solve this will improve my RL skills. Video of the Agent will be saved in videos. Onwards to the next one! 
-![Atari training progress](models/atari/runs/script_training_progress.png)
-- Trained agent eval video: [eval-episode-0.mp4](models/atari/runs/eval/eval-episode-0.mp4)
-    
+![Atari training progress](models/space-shooter/runs/script_training_progress.png)
+- Trained agent eval video: [eval-episode-0.mp4](models/space-shooter/runs/eval/eval-episode-0.mp4)
+
+# April 3, 2026    
+- Started a cartpole project. Learning about policy gradients and REINFORCE algorithm.
+- Gotta say, my coding is coming back, I'm mostly using llms as a lookup table at this point. Feel good to do this again.
 
 # Next Steps
 - Onwards to learning about policy gradients and PPO.
