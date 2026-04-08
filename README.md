@@ -22,10 +22,7 @@ I actually decided to write this by hand because I wanted to learn DQL RL. I got
 - started learning session of model to initiate after 20,000 replays.
 - Before this, we could only hit a max reward of 1200. That took 1 day. Now, in a couple hours, we can hit > 1500. I'm gonna let it train for a day to see what i get.
 
-# April 1, 2026
-- After training for 3 days. I managed to get an reward of ~1000. Human benchmark is 1500. I'm going to stop here as I don't think attempting to solve this will improve my RL skills. Video of the Agent will be saved in videos. Onwards to the next one!
-![Atari training progress](models/atari/runs/script_training_progress.png)
-- Trained agent eval video: [eval-episode-0.mp4](models/space-shooter/runs/eval/eval-episode-0.mp4)
+
 
 # Next Steps
 - Onwards to learning about policy gradients.
@@ -61,6 +58,9 @@ I actually decided to write this by hand because I wanted to learn DQL RL. I got
 # April 3, 2026    
 - Started a cartpole project. Learning about policy gradients and REINFORCE algorithm.
 - Gotta say, my coding is coming back, I'm mostly using llms as a lookup table at this point. Feel good to do this again.
+- coded up reinforce algorithm from scratch. Trained to 50 timesteps, seems to generalize well to 100 timesteps.
+- ![CartPole evaluation](models/cartpole/eval.gif)
+- I'm sure if i train longer, it can do way better. I only trained a 2 layer network for 13 minutes.
 
 # Next Steps
 - Onwards to learning about policy gradients and PPO.
