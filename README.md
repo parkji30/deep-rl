@@ -29,7 +29,8 @@ I actually decided to write this by hand because I wanted to learn DQL RL. I got
 - I'm currently on Vanilla DQN. It's so bad. I can't get it to converge. (Mar 9, 2026)
 - <img width="541" height="190" alt="image" src="https://github.com/user-attachments/assets/8790fdef-69fa-4911-8103-309ab82d47ce" />
 
-- Okay update, turns out my model was learning. I was just plotting the wrong metric (loss). This is useless because Q-Values are always moving targets. The ground truth is always changing. It's better to plot reward per episode (Temporal Difference in our case, i.e. one step at a time). Here's the reward plot below.
+- Okay update, turns out my model was learning. I was just plotting the wrong metric (loss). This is useless because Q-Values are always moving targets. The ground truth is always changing. It's better to plot reward per episode (Temporal Difference in our case, i.e. one step at a time).
+
 ## Sunday, March 29, 2026.
 - Okay I got it better than what is the human benchmark (reward score ~1500). Quite a few things i did here.
 - I increased replay buffer significantly. Did this by storing the replay images on CPU using uint8 and then converting them to torch tensors when i sample.
