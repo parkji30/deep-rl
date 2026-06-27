@@ -51,7 +51,7 @@ I actually decided to write this by hand because I wanted to learn DQL RL. I got
 - Started a cartpole project. Learning about policy gradients and REINFORCE algorithm.
 - Gotta say, my coding is coming back, I'm mostly using llms as a lookup table at this point. Feel good to do this again.
 - coded up reinforce algorithm from scratch. Trained to 50 timesteps, seems to generalize well to 100 timesteps.
-- ![CartPole evaluation](models/cartpole/eval.gif)
+![CartPole evaluation](models/cartpole/eval.gif)
 - I'm sure if i train longer, it can do way better. I only trained a 2 layer network for 13 minutes.
 
 # Next Steps
